@@ -3,7 +3,8 @@
     -- @Author : zhangyuhao
     -- @Date   : 2020/12/16
     -- @Desc   : 1. MVVM框架，Model层基类，提供数据
-                 2. VM层会根据数据名字订阅某项数据的改变事件，M层需要在数据初始化和数据改变后调用Publish发布该数据名字和改变后的数据
+                 2. VM层会根据数据名字订阅某项数据的改变事件，M层需要在数据初始化和数据改变后调用Publish发布改变后的数据
+                 3. 针对列表数据的刷新，发布的一定要是一个数组！不然vm层无法解析数据结构
 ]]
 
 ---@class ModelBase
@@ -14,26 +15,29 @@ function ModelBase:ctor(...)
     
 end
 
+---virtual
 function ModelBase:OnCreate()
     self.subject = Rx.Subject.create()
     self.subscribeDatas = {}
 end
 
+---virtual
 function ModelBase:OnDestroy()
     
 end
 ------------------------------------------ Life End ------------------------------------------
 ---订阅数据改变
----@param dataName string - 数据名字
+---@param eventId any - 事件id
 ---@param cb function - 处理函数
-function ModelBase:Subscribe(dataName, obj, cb)
+function ModelBase:Subscribe(eventId, obj, cb)
     local handler = make_new_handler(obj, cb)
     local tab = {
-        dataName = dataName,
+        eventId = eventId,
         obj = obj,
-        subscription = self.subject:subscribe(function (name, rawData)
-            if name == dataName then
-                handler(dataName, rawData)
+        subscription = self.subject:subscribe(function (id, ...)
+            -- 发布事件时判断注册的id是否和当前发布的id相同
+            if id == eventId then
+                handler(...)
             end
         end)
     }
@@ -42,10 +46,10 @@ function ModelBase:Subscribe(dataName, obj, cb)
 end
 
 ---取消订阅
----@param dataName string - 数据名字
-function ModelBase:Unsubscribe(dataName, obj)
+---@param eventId any - 事件id
+function ModelBase:Unsubscribe(eventId, obj)
     local idx, tab = table.find(self.subscribeDatas, function (t)
-        return t.obj == obj and t.dataName == dataName
+        return t.obj == obj and t.eventId == eventId
     end)
     if tab then
         tab.subscription:unsubscribe()
@@ -67,10 +71,9 @@ end
 
 ---发布数据改变
 ---protected
----@param dataName string - 数据名字
----@param data any - 原始数据
-function ModelBase:Publish(dataName, data)
-    self.subject:onNext(dataName, data)
+---@param eventId any - 事件id
+function ModelBase:Publish(eventId, ...)
+    self.subject:onNext(eventId, ...)
 end
 
 return ModelBase

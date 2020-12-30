@@ -37,15 +37,29 @@ function UGUIComponent:Refresh(data)
     if BindableCompType.Panel == self.componentType then
 
     elseif BindableCompType.Text == self.componentType then
-        self.component.text = data
-    end
-end
+        self.component.text = data              -- 刷新文本
+        
+    elseif BindableCompType.Button == self.componentType then
+        self.component.IsInteractable = data == true   -- 刷新可点击状态
 
----设置自定义刷新方法
----用于对于某类组件，刷新方法无法统一，会根据具体组件实例有所区分
----@param onRefresh function - (arg1:component, arg2:data)
-function UGUIComponent:SetCustomRefresh(onRefresh)
-    self.onRefresh = onRefresh
+    elseif BindableCompType.Toggle == self.componentType then
+        self.component.isOn = data == true   -- 刷新可点击状态
+
+    elseif BindableCompType.Image == self.componentType then
+        self.component.sprite = data               -- 使用GLoader加载图片
+
+    elseif BindableCompType.RawImage == self.componentType then
+        self.component.texture = data               -- 使用GLoader加载图片
+
+    elseif BindableCompType.InputField == self.componentType then
+        self.component.text = data
+
+    elseif BindableCompType.Slider == self.componentType then
+        self.component.value = data             -- 刷新value
+
+    elseif BindableCompType.List == self.componentType then         
+        Logger.LogWarningFormat("组件节点[%s]未给列表指明自定义刷新方法", self.fullName)
+    end
 end
 
 return UGUIComponent

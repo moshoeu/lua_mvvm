@@ -20,7 +20,7 @@ end
 
 ---订阅数据改变事件
 ---@param cb function - 事件回调
----@return Rx.Observer - 观察者对象
+---@return table - 订阅 Rx.Subscription 
 function BindableProperty:Subscribe(cb)
     return self.subject:subscribe(cb)
 end
