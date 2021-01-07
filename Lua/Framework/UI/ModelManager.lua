@@ -11,19 +11,20 @@ local ModelManager = class ("ModelManager")
 -- Model配置
 -- key = Model名字, value = lua文件
 local ModelConfig = {
-    LoginModel = require "gameplay.model.loginmodel"
+    LoginModel = require "gameplay.model.loginmodel",
+    MainModel = require "gameplay.model.mainmodel"
 }
 
 function ModelManager:ctor()
+    self.m_models = {}
     self:InstantiateModel()
 end
 
 ---实例化所有Model
 function ModelManager:InstantiateModel()
-    self.models = {}
     for modelName, prototype in pairs (ModelConfig) do
-        self.models[modelName] = prototype.new()
-        self.models[modelName]:OnCreate()
+        self.m_models[modelName] = prototype.new()
+        self.m_models[modelName]:OnCreate()
     end
 end
 
@@ -31,7 +32,7 @@ end
 ---@param modelName string
 ---@return ModelBase
 function ModelManager:GetModel(modelName)
-    return assert(self.models[modelName], string.format("找不到名字为[%s]的Model", modelName))
+    return assert(self.m_models[modelName], string.format("找不到名字为[%s]的Model", modelName))
 end
 
 return ModelManager

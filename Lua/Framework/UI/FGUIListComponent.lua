@@ -15,7 +15,7 @@ local FGUIListComponent = class("FGUIListComponent", FGUIComponent)
 ---@param component userdata - fgui元件
 function FGUIListComponent:OnCreate(component)
     base(self, "OnCreate", component)
-    self.component:SetVirtual()     -- 默认使用虚拟列表
+    self.m_Component:SetVirtual()     -- 默认使用虚拟列表
 end
 
 ---刷新显示
@@ -27,12 +27,12 @@ function FGUIListComponent:Refresh(numItems, onItemRefresh)
 
     -- 有自定义刷新函数 优先使用自定义刷新
     -- if self.onRefresh then
-    --     self.onRefresh(self.component, data)
+    --     self.onRefresh(self.m_Component, data)
     --     return
     -- end
 
-    self.component.itemRenderer = onItemRefresh
-    self.component.numItems = numItems
+    self.m_Component.itemRenderer = onItemRefresh
+    self.m_Component.numItems = numItems
 
 end
 
@@ -40,8 +40,8 @@ end
 ---@param selectIdx number - 当前选中的item索引
 ---@param isSmooth boolean - 是否平滑过渡
 function FGUIListComponent:SetIndex(selectIdx, isSmooth)
-    self.component.selectedIndex = selectIdx
-    self.component:ScrollToView(selectIdx, isSmooth)
+    self.m_Component.selectedIndex = selectIdx
+    self.m_Component:ScrollToView(selectIdx, isSmooth)
 end
 
 return FGUIListComponent

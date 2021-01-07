@@ -20,6 +20,7 @@ UIDefinitions.BindableCompType = {
     Slider = 8,
     List = 9,
     Controller = 10,
+    Loader = 11,
 
     Unknown = 100
 }
@@ -53,8 +54,9 @@ UIDefinitions.BindableCompPostfix = {
     [BindableCompType.RawImage] = "RawImag",
     [BindableCompType.InputField] = "Input",
     [BindableCompType.Slider] = "Slider",
-    [BindableCompType.List] = "Lst",
+    [BindableCompType.List] = "List",
     [BindableCompType.Controller] = "Ctrl",
+    [BindableCompType.Loader] = "Loader",
 }
 
 ---可绑定组件对应的类
@@ -69,6 +71,7 @@ UIDefinitions.BindableCompClass = {
     [BindableCompType.Slider] = "framework.ui.fguicomponent",
     [BindableCompType.List] = "framework.ui.fguilistcomponent",
     [BindableCompType.Controller] = "framework.ui.fguicontrollercomponent",
+    [BindableCompType.Loader] = "framework.ui.fguiloadercomponent",
 }
 
 

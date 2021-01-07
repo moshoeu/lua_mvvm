@@ -17,8 +17,9 @@ end
 
 ---virtual
 function ModelBase:OnCreate()
-    self.subject = Rx.Subject.create()
-    self.subscribeDatas = {}
+    self.m_subject = Rx.Subject.create()
+    self.m_subscribeDatas = {}
+    self.m_cacheEventId2Data = {}     -- 缓存最新的 事件id到数据的映射
 end
 
 ---virtual
@@ -34,46 +35,54 @@ function ModelBase:Subscribe(eventId, obj, cb)
     local tab = {
         eventId = eventId,
         obj = obj,
-        subscription = self.subject:subscribe(function (id, ...)
+        subscription = self.m_subject:subscribe(function (id, args)
             -- 发布事件时判断注册的id是否和当前发布的id相同
             if id == eventId then
-                handler(...)
+                handler(args)
             end
         end)
     }
 
-    table.insert(self.subscribeDatas, tab)
+    table.insert(self.m_subscribeDatas, tab)
+
+    -- 订阅的时候 如果已经有数据 则把最新的数据推送给订阅者
+    local cacheData = self.m_cacheEventId2Data[eventId]
+    if cacheData then
+        handler(cacheData)
+    end
 end
 
 ---取消订阅
 ---@param eventId any - 事件id
 function ModelBase:Unsubscribe(eventId, obj)
-    local idx, tab = table.find(self.subscribeDatas, function (t)
+    local idx, tab = table.find(self.m_subscribeDatas, function (t)
         return t.obj == obj and t.eventId == eventId
     end)
     if tab then
         tab.subscription:unsubscribe()
     end
-    table.remove(self.subscribeDatas, idx)
+    table.remove(self.m_subscribeDatas, idx)
 end
 
 ---取消一个obj的所有订阅
 ---@param obj any
 function ModelBase:UnsubscribeByObj(obj)
-    for i = #self.subscribeDatas, 1, -1 do
-        local tab = self.subscribeDatas[i]
+    for i = #self.m_subscribeDatas, 1, -1 do
+        local tab = self.m_subscribeDatas[i]
         if tab.obj == obj then
             tab.subscription:unsubscribe()
-            table.remove(self.subscribeDatas, i)
+            table.remove(self.m_subscribeDatas, i)
         end
     end
 end
 
----发布数据改变
+---发布数据改变(主动调用)
 ---protected
 ---@param eventId any - 事件id
-function ModelBase:Publish(eventId, ...)
-    self.subject:onNext(eventId, ...)
+---@param args any - NOTE: 因为要做数据缓存，不定参无法缓存，所以只能发送一个确定的参数
+function ModelBase:Publish(eventId, args)
+    self.m_cacheEventId2Data[eventId] = args
+    self.m_subject:onNext(eventId, args)
 end
 
 return ModelBase

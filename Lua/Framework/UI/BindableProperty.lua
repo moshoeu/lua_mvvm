@@ -13,29 +13,29 @@ local Rx = require "Util.rx"
 ---@param propertyName string - 属性名
 ---@param defaultVal any - 默认值
 function BindableProperty:ctor(propertyName, defaultVal)
-    self.value = defaultVal
-    self.name = propertyName
-    self.subject = Rx.Subject.create()
+    self.m_value = defaultVal
+    self.m_name = propertyName
+    self.m_subject = Rx.Subject.create()
 end
 
 ---订阅数据改变事件
 ---@param cb function - 事件回调
 ---@return table - 订阅 Rx.Subscription 
 function BindableProperty:Subscribe(cb)
-    return self.subject:subscribe(cb)
+    return self.m_subject:subscribe(cb)
 end
 
 ---设置绑定数据
 ---@param val any - 变化的值
 function BindableProperty:Set(val)
-    self.value = val    
-    self.subject:onNext(val)
+    self.m_value = val    
+    self.m_subject:onNext(val)
 end
 
 ---获取属性名字
 ---@return string
 function BindableProperty:GetName()
-    return self.name
+    return self.m_name
 end
 
 return BindableProperty

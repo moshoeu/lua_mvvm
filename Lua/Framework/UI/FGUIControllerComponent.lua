@@ -21,13 +21,13 @@ end
 ---override
 ---@param idx number
 function FGUIControllerComponent:Refresh(idx)
-    self.component.selectedIndex = idx
+    self.m_Component.selectedIndex = idx
 end
 
 ---设置当前索引
 ---@param selectIdx number - 当前选中的item索引
 function FGUIControllerComponent:SetIndex(selectIdx)
-    self.component.selectedIndex = selectIdx
+    self.m_Component.selectedIndex = selectIdx
 end
 
 return FGUIControllerComponent

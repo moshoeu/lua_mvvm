@@ -19,7 +19,7 @@ end
 ---初始化
 ---@param component userdata - fgui元件
 function FGUIComponent:OnCreate(component)
-    self.component = component
+    self.m_Component = component
     self.fullName = component.name
 
     self.events = {}
@@ -41,7 +41,7 @@ function FGUIComponent:Refresh(data)
 
     -- 有自定义刷新函数 优先使用自定义刷新
     if self.onRefresh then
-        self.onRefresh(self.component, data)
+        self.onRefresh(self.m_Component, data)
         return
     end
 
@@ -49,28 +49,28 @@ function FGUIComponent:Refresh(data)
     if BindableCompType.Panel == self.componentType then
 
     elseif BindableCompType.Text == self.componentType then
-        self.component.text = data              -- 刷新文本
+        self.m_Component.text = data              -- 刷新文本
         
     elseif BindableCompType.Button == self.componentType then
-        self.component.enabled = data == true   -- 刷新可点击状态
+        self.m_Component.enabled = data == true   -- 刷新可点击状态
 
     elseif BindableCompType.Toggle == self.componentType then
-        self.component.enabled = data == true   -- 刷新可点击状态
+        self.m_Component.enabled = data == true   -- 刷新可点击状态
 
     elseif BindableCompType.Image == self.componentType then
-        self.component.url = data               -- 使用GLoader加载图片
+        self.m_Component.url = data               -- 使用GLoader加载图片
 
     elseif BindableCompType.RawImage == self.componentType then
-        self.component.url = data               -- 使用GLoader加载图片
+        self.m_Component.url = data               -- 使用GLoader加载图片
 
     elseif BindableCompType.InputField == self.componentType then
         -- note:fgui无法直接给inputfield赋值
 
     elseif BindableCompType.Slider == self.componentType then
-        self.component.value = data             -- 刷新value
+        self.m_Component.value = data             -- 刷新value
 
     elseif BindableCompType.Controller == self.componentType then
-        self.component.selectedIndex = data     -- 跳转至界面
+        self.m_Component.selectedIndex = data     -- 跳转至界面
     end
 end
 
@@ -94,43 +94,43 @@ function FGUIComponent:SetEventListener(uiEventType, callback, env)
     end
 
     if UIEventType.OnClick == uiEventType then
-        self.component.onClick:Set(handle)
+        self.m_Component.onClick:Set(handle)
 
     elseif UIEventType.OnPointIn == uiEventType then
-        self.component.onRollOver:Set(handle)
+        self.m_Component.onRollOver:Set(handle)
 
     elseif UIEventType.OnPointExit == uiEventType then
-        self.component.onRollOut:Set(handle)
+        self.m_Component.onRollOut:Set(handle)
 
     elseif UIEventType.OnPointDown == uiEventType then
-        self.component.onTouchBegin:Set(handle)
+        self.m_Component.onTouchBegin:Set(handle)
 
     elseif UIEventType.OnPointUp == uiEventType then
-        self.component.onTouchEnd:Set(handle)
+        self.m_Component.onTouchEnd:Set(handle)
 
     elseif UIEventType.OnTglChanged == uiEventType then
         -- 复选框回调 传入isOn
         handle = function ()
-            callback(self.component.selected, env)
+            callback(self.m_Component.selected, env)
         end
-        self.component.onChanged:Set(handle)
+        self.m_Component.onChanged:Set(handle)
 
     elseif UIEventType.OnInputFieldChanged == uiEventType then
         -- 文本输入回调 传入改变后的text
         handle = function ()
-            callback(self.component.text, env)    
+            callback(self.m_Component.text, env)    
         end
-        self.component.onChanged:Set(handle)
+        self.m_Component.onChanged:Set(handle)
 
     elseif UIEventType.OnInputFieldSubmit == uiEventType then
-        self.component.onSubmit:Set(handle)
+        self.m_Component.onSubmit:Set(handle)
 
     elseif UIEventType.OnControllerChanged == uiEventType then
         -- 文本输入回调 传入改变后的text
         handle = function ()
-            callback(self.component.selectedIndex, env)
+            callback(self.m_Component.selectedIndex, env)
         end
-        self.component.onChanged:Set(handle)
+        self.m_Component.onChanged:Set(handle)
 
     end
 
@@ -150,31 +150,31 @@ function FGUIComponent:RemoveEventListener(uiEventType, handleId)
     assert(handle, string.format("事件id为[%d]的事件不存在！", handleId))
 
     if UIEventType.OnClick == uiEventType then
-        self.component.onClick:Remove(handle)
+        self.m_Component.onClick:Remove(handle)
   
     elseif UIEventType.OnPointIn == uiEventType then
-        self.component.onRollOver:Remove(handle)
+        self.m_Component.onRollOver:Remove(handle)
 
     elseif UIEventType.OnPointExit == uiEventType then
-        self.component.onRollOut:Remove(handle)
+        self.m_Component.onRollOut:Remove(handle)
 
     elseif UIEventType.OnPointDown == uiEventType then
-        self.component.onTouchBegin:Remove(handle)
+        self.m_Component.onTouchBegin:Remove(handle)
 
     elseif UIEventType.OnPointUp == uiEventType then
-        self.component.onTouchEnd:Remove(handle)
+        self.m_Component.onTouchEnd:Remove(handle)
 
     elseif UIEventType.OnTglChanged == uiEventType then
-        self.component.onChanged:Remove(handle)
+        self.m_Component.onChanged:Remove(handle)
 
     elseif UIEventType.OnInputFieldChanged == uiEventType then
-        self.component.onChanged:Remove(handle)
+        self.m_Component.onChanged:Remove(handle)
 
     elseif UIEventType.OnInputFieldSubmit == uiEventType then
-        self.component.onSubmit:Remove(handle)
+        self.m_Component.onSubmit:Remove(handle)
 
     elseif UIEventType.OnControllerChanged == uiEventType then
-        self.component.onChanged:Remove(handle)
+        self.m_Component.onChanged:Remove(handle)
     end
 
     self.events[handleId] = nil

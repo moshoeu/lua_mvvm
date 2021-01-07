@@ -4,8 +4,20 @@
     -- @Date   : 2020/12/23
     -- @Desc   : UI管理器
 ]]
+local bit = require "util.bit"
 
 _ENV.UI = {}
+
+---窗口属性
+UI.WindowProperty = {
+    PROPERTY_CACHE 			            = 1,     --缓存窗口,关闭UI时不销毁UI,只是隐藏，默认不缓存
+    PROPERTY_SYNCLOAD 		            = 2,     --同步加载，通常普通UI异步加载，启动UI同步加载
+    PROPERTY_SINGLETON                  = 4,     --单实例，多次ui.OpenWindow 只会存在一个实例，但并不代表一直存在
+    PROPERTY_FOREVER                    = 8,     --永远存在，不会被关闭，ui.CloseWindow和ui.CloseAllWindow关闭不了
+    PROPERTY_IGNORE_CLOSE_All_WINDOW    = 16,    --ui.CloseWindow可以关闭，ui.CloseAllWindow不会关闭
+
+    PROPERTY_FULLSCREEN                 = 32,    --设置是否是全屏界面，最上层的全屏界面以下的界面都会被设为不可见
+}
 
 -- 分配窗口id
 local dispatchWinID = 0
@@ -16,12 +28,14 @@ local uiName2Tpl = {}
 -- 加载出的所有窗口
 local totalWindows = {}
 
+
+
 ---根据配置生成UI模板
 ---@param config table - UIConfig
 ---@return table
 local function GenerateTemplates(config)
     local FGUIView = require "framework.ui.fguiview"
-    
+
     -- 截获require方法抛出的错误
     local function tryRequire(path)
         pcall(function ()
@@ -29,7 +43,7 @@ local function GenerateTemplates(config)
         end)
     end
 
-    local function make(uiName, packageName, windowName)
+    local function make(uiName, packageName, windowName, windowProperty)
         assert(_ENV[uiName] == nil, string.format("该ui模板名[%s]已被占用，请检查配置是否重名或者全局表使用了该字段", uiName))
 
         -- 创建一个UI类原型，继承FGUIView，放入全局表
@@ -39,13 +53,14 @@ local function GenerateTemplates(config)
         local tplCfg = {
             uiName = uiName,
             packageName = packageName,
-            windowName = windowName
+            windowName = windowName,
+            windowProperty = windowProperty
         }
         uiName2Tpl[uiName] = tplCfg
     end
-    
+
     for _, item in ipairs(config) do
-        make(item[1], item[2], item[3])
+        make(item[1], item[2], item[3], item[4])
     end
 end
 
@@ -68,7 +83,7 @@ end
 
 ---------------------------------------------- Event ----------------------------------------------
 -- 事件id 定义与c#侧UIWindow.EventID一致
-local EventId = {
+local EventID = {
     OnFailed = 0,   -- 加载失败
     OnCreate = 1,
     OnShown = 2,
@@ -129,7 +144,7 @@ local function OnWindowUpdate(windowId, deltaTime)
     -- window.clinet:Update(deltaTime)  -- 废弃Update方法，不推荐UI使用该方法更新
 end
 
-------窗口OnDestroy回调
+---窗口OnDestroy回调
 ---@param windowId number - 窗口id
 ---@param args any - 参数
 local function OnWindowDestroy(windowId, args)
@@ -143,26 +158,26 @@ end
 ---@param param1 any - 参数1 根据事件id不同
 ---@param param2 any - 参数2
 local function EventHandle(windowId, evnetId, param1, param2)
-    if EventId.OnFailed == evnetId then
+    if EventID.OnFailed == evnetId then
         OnWindowFailed(windowId)
 
-    elseif EventId.OnCreate == evnetId then
+    elseif EventID.OnCreate == evnetId then
         local context = param1
         local args = param2
         OnWindowCreate(windowId, context, args)
 
-    elseif EventId.OnShown == evnetId then
+    elseif EventID.OnShown == evnetId then
         local args = param1
         OnWindowShown(windowId, args)
 
-    elseif EventId.OnHide == evnetId then
+    elseif EventID.OnHide == evnetId then
         local args = param1
         OnWindowHide(windowId, args)
 
-    elseif EventId.OnUpdate == evnetId then
+    elseif EventID.OnUpdate == evnetId then
         local deltaTime = param1
         OnWindowUpdate(windowId, deltaTime)
-    elseif EventId.OnDestroy == evnetId then
+    elseif EventID.OnDestroy == evnetId then
         local args = param1
         OnWindowDestroy(windowId,args)
     end
@@ -178,15 +193,17 @@ local function CreateWindow(tplCfg, args)
     local curWindowId = GetNewWinId()
     local window = {
         windowId = curWindowId,     
-        uiName = tplCfg.uiName,     -- lua原型类名字
-        client = nil                -- lua类实例
+        uiName = tplCfg.uiName,             -- lua原型类名字
+        client = nil,                       -- lua类实例
+        property = tplCfg.windowProperty,   -- 窗口属性
+        isHide = false
     }
     table.insert(totalWindows, window)
 
-    CSharpBridge.CreateWindow(curWindowId, tplCfg.packageName, tplCfg.windowName, args, EventHandle)
+    -- 判断是否异步加载
+    local isAsync = false == bit.and_test(window.property, UI.WindowProperty.PROPERTY_SYNCLOAD) 
+    CSharpBridge.CreateWindow(curWindowId, tplCfg.packageName, tplCfg.windowName, isAsync, args, EventHandle)
 
-    
-    print("CreateWindow", curWindowId)
     return curWindowId
 end
 
@@ -201,20 +218,57 @@ end
 ---@param args any - 参数
 ---@return number - 窗口id
 function UI.OpenWindow(uiName, args)
-    -- todo: 缓存
+    -- 找到缓存的界面
+    local _, window = table.find(totalWindows, function (window)
+        return true == window.isHide and uiName == window.uiName
+    end)
+    local id = nil
 
-    local tplCfg = assert(uiName2Tpl[uiName], string.format("找不到名字为[%s]的UI模板", uiName))
-    return CreateWindow(tplCfg)
+    if window then
+        CSharpBridge.ShowWindow(window.windowId, args)
+        window.isHide = false
+        id = window.windowId
+    else
+        local tplCfg = assert(uiName2Tpl[uiName], string.format("找不到名字为[%s]的UI模板", uiName))
+        id = CreateWindow(tplCfg, args)
+    end
+
+    return id
 end
 
 ---关闭一个窗口
+---@param windowId number
 function UI.CloseWindow(windowId)
-    -- todo: 缓存
-
-    CSharpBridge.DestroyWindow(windowId)
-
-    local idx, _ = table.find(totalWindows, function (window)
+    local idx, window = table.find(totalWindows, function (window)
         return windowId == window.windowId
     end)
-    table.remove(totalWindows, idx)
+
+    -- 界面缓存
+    if bit.and_test(window.property, UI.WindowProperty.PROPERTY_CACHE) then
+        CSharpBridge.HideWindow(windowId)
+        window.isHide = true
+    else
+        CSharpBridge.DestroyWindow(windowId)
+        table.remove(totalWindows, idx)
+    end
+
+end
+
+---关闭所有窗口
+---@param ignoreCache boolean - 是否忽略缓存属性 即不缓存 能销毁的都销毁
+function UI.CloseAllWindow(ignoreCache)
+    for idx = #totalWindows, 1, -1 do
+        local window = totalWindows[idx]
+        local isCache = bit.and_test(window.property, UI.WindowProperty.PROPERTY_CACHE) and not ignoreCache     -- 该窗口是否缓存
+        local isIngore = bit.and_test(window.property, UI.WindowProperty.PROPERTY_IGNORE_CLOSE_All_WINDOW)      -- 该窗口是否不关闭
+        if not isIngore then
+            if isCache then
+                CSharpBridge.HideWindow(window.windowId)
+                window.isHide = true
+            else
+                CSharpBridge.DestroyWindow(window.windowId)
+                table.remove(totalWindows, idx)
+            end
+        end
+    end
 end
