@@ -291,6 +291,8 @@ function ViewModelBase:UnbindAll()
     end
 
     self:OnUnbind()
+    self.m_bindSubscription = {}
+    self.m_bindProperties = {}
 end
 
 ----------------------------------------- DataBind End-----------------------------------------
